@@ -1,0 +1,27 @@
+# Byte-compiled / cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Logs & cache
+*.log
+.pytest_cache/
+.cache/
+
+# IDEs & editors
+.vscode/
+.idea/
+
+# Environment files
+.env
