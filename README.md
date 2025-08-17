@@ -72,6 +72,8 @@ Key reusable concepts: **idempotency, clear state transitions, async processing,
 
     
 Consola A → Docker
+    docker compose up --build  # Cuando queiro ejecutar la version mas reciente de docker, dependencias y codigo.
+    
     docker-compose up -d       # levantar servicios
     docker-compose down        # apagarlos
     docker ps                  # ver qué está corriendo

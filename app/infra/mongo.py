@@ -1,35 +1,58 @@
-from __future__ import annotations
-
-import os
+import logging
 from typing import Optional
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from pymongo import IndexModel, ASCENDING
+
+from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 _client: Optional[AsyncIOMotorClient] = None
 
-def get_client() -> AsyncIOMotorClient:
+
+async def connect_to_db():
+    """Initializes the database connection."""
     global _client
-    if not _client:
-        uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/orders")
-        _client = AsyncIOMotorClient(uri)
-    return _client
+    if _client:
+        return
+    logger.info("Connecting to MongoDB at %s...", settings.mongo_uri)
+    _client = AsyncIOMotorClient(settings.mongo_uri)
+    logger.info("MongoDB connection successful.")
+
+
+async def close_db_connection():
+    """Closes the database connection."""
+    global _client
+    if _client:
+        logger.info("Closing MongoDB connection...")
+        _client.close()
+        _client = None
+        logger.info("MongoDB connection closed.")
+
 
 def db() -> AsyncIOMotorDatabase:
-    # If MONGO_URI includes the DB name (…/orders), get_default_database() works.
-    # Otherwise, default to 'orders'.
-    client = get_client()
-    return client.get_default_database() or client["orders"]
+    """Returns the database instance. Must be called after connect_to_db."""
+    if not _client:
+        raise RuntimeError("Database not connected. Call connect_to_db during application startup.")
+    # Motor automatically uses the database specified in the MONGO_URL
+    return _client.get_default_database()
 
-async def ensure_indexes() -> None:
+
+async def ensure_indexes():
+    """Ensures that the required MongoDB indexes are created."""
+    logger.info("Ensuring database indexes exist...")
     database = db()
-    orders = database["orders"]
-    idemp = database["idempotency"]
 
-    # Orders: by created_at (optional), and unique compound (optional)
-    await orders.create_index("created_at")
-    await orders.create_index([("version", 1)])
+    # Idempotency collection indexes
+    idempotency_indexes = [
+        IndexModel([("key", ASCENDING)], name="idempotency_key_unique", unique=True),
+        IndexModel([("expires_at", ASCENDING)], name="idempotency_ttl", expireAfterSeconds=0),
+    ]
+    await database["idempotency"].create_indexes(idempotency_indexes)
+    logger.info("Indexes for 'idempotency' collection ensured.")
 
-    # Idempotency: unique key + TTL by expires_at
-    await idemp.create_index("key", unique=True)
-    # 24h TTL. Mongo requiere un índice TTL sobre un campo tipo fecha.
-    await idemp.create_index("expires_at", expireAfterSeconds=0)
+    # Orders collection indexes
+    orders_indexes = [IndexModel([("customer_id", ASCENDING)], name="orders_customer_id")]
+    await database["orders"].create_indexes(orders_indexes)
+    logger.info("Indexes for 'orders' collection ensured.")
