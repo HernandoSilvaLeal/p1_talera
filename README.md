@@ -71,23 +71,6 @@ It demonstrates **real-world backend patterns**: idempotent `POST` requests, opt
 
 
 
-## ⚙️ Configuration (ENV)
-| Variable | Description | Example |
-| :--- | :--- | :--- |
-| `APP_ENV` | Execution environment | `local` \| `dev` \| `prod` |
-| `APP_HOST` | FastAPI host | `0.0.0.0` |
-| `APP_PORT` | FastAPI port | `8000` |
-| `MONGO_URI` | Mongo connection string | `mongodb://mongo:27017` |
-| `MONGO_DB` | Database name | `orders_db` |
-| `LOG_LEVEL` | Logging level | `INFO` |
-| `IDEMPOTENCY_TTL_S` | TTL (sec) for idempotency keys | `86400` |
-| `CORS_ORIGINS` | Comma-separated list | `http://localhost:3000` |
-
-Complete/adjust according to your deployment. Keep secrets out of the repo (use a secret manager in the cloud).
-
-
-
-
 
 
 
@@ -488,6 +471,8 @@ cp .env.example .env
 | `CORS_ORIGINS`       | Comma-separated list of allowed origins     | `http://localhost:3000,http://127.0.0.1`  |
 
 ---
+
+Complete/adjust according to your deployment. Keep secrets out of the repo (use a secret manager in the cloud).
 
 ### 🔒 Notes
 - Keep `.env` **out of source control**.  
@@ -1124,7 +1109,8 @@ This section defines the **success criteria** for development and delivery, ensu
 
 
 
-# 📄 License / Author / Links
+# 📄 License / Authors / Links
+
 
 ### 📜 License
 This project is released under the **MIT License**.  
