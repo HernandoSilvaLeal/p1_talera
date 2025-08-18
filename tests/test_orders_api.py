@@ -17,7 +17,7 @@ async def test_create_and_get_order(test_client: AsyncClient):
     assert r1.status_code == 201  # Check for successful creation
     order = r1.json()
     assert order["status"] == "CREATED"
-    assert order["total"] == "20.00"
+    assert order["amount"] == "20.00"
 
     # idempotent retry
     r2 = await test_client.post("/orders", json=body, headers={"Idempotency-Key": "K1"})
