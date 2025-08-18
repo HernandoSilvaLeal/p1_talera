@@ -21,21 +21,21 @@ ALLOWED_TRANSITIONS = {
 
 # TODO: Migrar a BSON Decimal128 en producción (Decimal -> Decimal128 al persistir; Decimal128 -> str/Decimal al leer).
 def _persistable_doc_from_payload(payload: OrderIn) -> dict:
-    """Mongo-safe: Decimal -> str en items[].price y total; timestamps en UTC; version inicial."""
+    """Mongo-safe: Decimal -> str en items[].price y amount; timestamps en UTC; version inicial."""
     now = datetime.now(timezone.utc)
     items = []
-    total = Decimal("0")
+    amount = Decimal("0")
     for it in payload.items:
         price = it.price if isinstance(it.price, Decimal) else Decimal(str(it.price))
         items.append({"sku": it.sku, "qty": it.qty, "price": str(price)})
-        total += price * it.qty
+        amount += price * it.qty
     return {
         "customer_id": payload.customer_id,
         "currency": payload.currency,
         "items": items,
         "status": "CREATED",
         "version": 1,
-        "total": str(total),
+        "amount": str(amount),
         "created_at": now,
         "updated_at": now,
     }
@@ -43,9 +43,9 @@ def _persistable_doc_from_payload(payload: OrderIn) -> dict:
 def _order_out_from_doc(doc: dict) -> OrderOut:
     doc = dict(doc)
     doc["id"] = str(doc.pop("_id"))
-    # Convert total and item prices back to Decimal
-    if "total" in doc:
-        doc["total"] = Decimal(doc["total"])
+    # Convert amount and item prices back to Decimal
+    if "amount" in doc:
+        doc["amount"] = Decimal(doc["amount"])
     for item in doc.get("items", []):
         if "price" in item:
             item["price"] = Decimal(item["price"])
