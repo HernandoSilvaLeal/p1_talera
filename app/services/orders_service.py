@@ -19,20 +19,25 @@ ALLOWED_TRANSITIONS = {
     "CANCELLED": set(),
 }
 
-def _to_decimal(v: Decimal | float | int) -> Decimal:
-    return Decimal(str(v))
-
-def _order_doc_from_in(payload: OrderIn) -> dict:
-    total = sum(_to_decimal(it.price) * _to_decimal(it.qty) for it in payload.items)
+# TODO: Migrar a BSON Decimal128 en producción (Decimal -> Decimal128 al persistir; Decimal128 -> str/Decimal al leer).
+def _persistable_doc_from_payload(payload: OrderIn) -> dict:
+    """Mongo-safe: Decimal -> str en items[].price y total; timestamps en UTC; version inicial."""
+    now = datetime.now(timezone.utc)
+    items = []
+    total = Decimal("0")
+    for it in payload.items:
+        price = it.price if isinstance(it.price, Decimal) else Decimal(str(it.price))
+        items.append({"sku": it.sku, "qty": it.qty, "price": str(price)})
+        total += price * it.qty
     return {
         "customer_id": payload.customer_id,
         "currency": payload.currency,
-        "items": [it.model_dump() for it in payload.items],
+        "items": items,
         "status": "CREATED",
         "version": 1,
-        "total": str(total),  # Store as string
-        "created_at": datetime.now(timezone.utc),
-        "updated_at": datetime.now(timezone.utc),
+        "total": str(total),
+        "created_at": now,
+        "updated_at": now,
     }
 
 def _order_out_from_doc(doc: dict) -> OrderOut:
@@ -53,7 +58,7 @@ async def create_order(payload: OrderIn, idempotency_key: Optional[str]) -> Orde
         # Reconstruimos OrderOut desde el resultado cacheado
         return OrderOut.model_validate(cached["result"])
 
-    document = _order_doc_from_in(payload)
+    document = _persistable_doc_from_payload(payload)
     res = await db()["orders"].insert_one(document)
     created = await db()["orders"].find_one({"_id": res.inserted_id})
 
