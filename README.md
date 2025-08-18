@@ -70,6 +70,38 @@ Key reusable concepts: **idempotency, clear state transitions, async processing,
   Para Compilar:
     uvicorn app.main:app --reload
 
+# comands --------------------------------------------------
+
+Levantar limpio
+    docker compose down
+    docker compose up -d --build
+    docker compose ps
+
+docker info
+
+Ver logs de arranque
+    docker logs p1-app-1 --tail=50
+
+Probar liveness y readiness
+    curl -i http://localhost:8000/healthz
+    curl -i http://localhost:8000/ready
+
+Probar logs por request
+    curl -i http://localhost:8000/healthz
+    docker logs p1-app-1 --tail=50
+
+Para correr los test
+    poetry run pytest
+
+
+
+
+
+
+
+
+
+
     
 Consola A → Docker
     docker compose up --build  # Cuando queiro ejecutar la version mas reciente de docker, dependencias y codigo.

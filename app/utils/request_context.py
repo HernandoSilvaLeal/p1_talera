@@ -1,17 +1,27 @@
-import uuid
-from starlette.requests import Request
+from contextvars import ContextVar, Token
+from typing import Any, Optional
 
-def generate_request_id():
-    """Generate a unique request ID."""
-    return str(uuid.uuid4())
+# Context variables
+_request_id: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
+_order_id: ContextVar[Optional[str]] = ContextVar("order_id", default=None)
+_customer_id: ContextVar[Optional[str]] = ContextVar("customer_id", default=None)
 
-async def ensure_request_id(request: Request, call_next):
-    """
-    Ensure that a request ID is present in the request headers.
-    This is a standard FastAPI middleware.
-    """
-    if 'X-Request-Id' not in request.headers:
-        # This modification is safe as headers are mutable within the middleware scope
-        request.headers.__dict__["_list"].append((b'x-request-id', generate_request_id().encode()))
-    response = await call_next(request)
-    return response
+# --- Setters ---
+def set_request_id(value: str) -> Token:
+    return _request_id.set(value)
+
+def set_order_id(value: str) -> Token:
+    return _order_id.set(value)
+
+def set_customer_id(value: str) -> Token:
+    return _customer_id.set(value)
+
+# --- Getters ---
+def get_request_id() -> Optional[str]:
+    return _request_id.get()
+
+# --- Clear ---
+def clear_context() -> None:
+    _request_id.set(None)
+    _order_id.set(None)
+    _customer_id.set(None)

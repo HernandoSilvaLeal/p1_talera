@@ -1,58 +1,43 @@
-import logging
+from __future__ import annotations
+
+import os
 from typing import Optional
-
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from pymongo import IndexModel, ASCENDING
-
-from app.config import settings
-
-logger = logging.getLogger(__name__)
 
 _client: Optional[AsyncIOMotorClient] = None
+_db: Optional[AsyncIOMotorDatabase] = None
 
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongo:27017/orders")
 
-async def connect_to_db():
-    """Initializes the database connection."""
-    global _client
-    if _client:
+async def connect_to_mongo() -> None:
+    """Create global Motor client/db if not already created."""
+    global _client, _db
+    if _client is not None and _db is not None:
         return
-    logger.info("Connecting to MongoDB at %s...", settings.mongo_uri)
-    _client = AsyncIOMotorClient(settings.mongo_uri)
-    logger.info("MongoDB connection successful.")
-
-
-async def close_db_connection():
-    """Closes the database connection."""
-    global _client
-    if _client:
-        logger.info("Closing MongoDB connection...")
-        _client.close()
-        _client = None
-        logger.info("MongoDB connection closed.")
-
+    _client = AsyncIOMotorClient(MONGO_URI, uuidRepresentation="standard")
+    # Si la URI trae DB por defecto úsala; si no, 'orders'
+    default_db = _client.get_default_database()  # puede ser None
+    db_name = (default_db.name if default_db.name else "orders")
+    _db = _client[db_name]
 
 def db() -> AsyncIOMotorDatabase:
-    """Returns the database instance. Must be called after connect_to_db."""
-    if not _client:
-        raise RuntimeError("Database not connected. Call connect_to_db during application startup.")
-    # Motor automatically uses the database specified in the MONGO_URL
-    return _client.get_default_database()
+    """Return the initialized database handle."""
+    assert _db is not None, "Mongo not initialized. Call connect_to_mongo() first."
+    return _db
 
+async def close_mongo_connection() -> None:
+    """Close and clear the global client/db."""
+    global _client, _db
+    if _client is not None:
+        _client.close()
+    _client = None
+    _db = None
 
-async def ensure_indexes():
-    """Ensures that the required MongoDB indexes are created."""
-    logger.info("Ensuring database indexes exist...")
+async def ensure_indexes() -> None:
+    """Create minimal indexes for the service collections."""
     database = db()
-
-    # Idempotency collection indexes
-    idempotency_indexes = [
-        IndexModel([("key", ASCENDING)], name="idempotency_key_unique", unique=True),
-        IndexModel([("expires_at", ASCENDING)], name="idempotency_ttl", expireAfterSeconds=0),
-    ]
-    await database["idempotency"].create_indexes(idempotency_indexes)
-    logger.info("Indexes for 'idempotency' collection ensured.")
-
-    # Orders collection indexes
-    orders_indexes = [IndexModel([("customer_id", ASCENDING)], name="orders_customer_id")]
-    await database["orders"].create_indexes(orders_indexes)
-    logger.info("Indexes for 'orders' collection ensured.")
+    await database["orders"].create_index("customer_id")
+    await database["orders"].create_index("status")
+    await database["idempotency"].create_index("key", unique=True)
+    # TTL para resultados de idempotencia si manejamos expiración
+    await database["idempotency"].create_index("expires_at", expireAfterSeconds=0)

@@ -1,19 +1,30 @@
-import json
 import logging
 import sys
 
-
-class JsonFormatter(logging.Formatter):
-    def format(self, record: logging.LogRecord) -> str:
-        base = {"level": record.levelname, "logger": record.name, "message": record.getMessage()}
-        if hasattr(record, "extra"):
-            base.update(record.extra)  # type: ignore[arg-type]
-        return json.dumps(base, ensure_ascii=False)
-
+import structlog
+from structlog.contextvars import merge_contextvars
 
 def configure_logging(level: str = "INFO") -> None:
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(JsonFormatter())
-    root = logging.getLogger()
-    root.setLevel(level)
-    root.handlers = [handler]
+    """
+    Configure structured logging using structlog.
+    """
+    logging.basicConfig(
+        format="%(message)s",
+        stream=sys.stdout,
+        level=logging.getLevelName(level.upper()),
+    )
+
+    structlog.configure(
+        processors=[
+            merge_contextvars,  # Adds context variables to the log record
+            structlog.stdlib.add_log_level, # Adds the log level
+            structlog.processors.TimeStamper(fmt="iso", utc=True), # ISO UTC timestamp
+            structlog.processors.JSONRenderer(), # Renders the log as JSON
+        ],
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
+
+    # Silenciar logs de uvicorn y otros que no sean de la app
+    logging.getLogger("uvicorn").setLevel(logging.WARNING)
+    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
