@@ -16,6 +16,7 @@ from app.infra.logging import configure_logging
 from app.infra.mongo import close_mongo_connection, connect_to_mongo, ensure_indexes, db
 from app.routes.metrics import router as metrics_router
 from app.routes.orders import router as orders_router
+from app.routes import health as health_router
 from app.utils import request_context
 
 # 1. Configurar el logging ESTRUCTURADO lo antes posible

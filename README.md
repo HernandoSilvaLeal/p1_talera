@@ -164,6 +164,13 @@ With these 6 terminals and the checklist you ensure:
 
 ---
 
+## ⚡️ Bloque mínimo — Ejecución y decisiones
+
+
+### ▶️ Run locally
+Ejecuta la API en modo desarrollo con recarga automática.
+```bash
+uvicorn app.main:app --reload
 
 
 
@@ -464,4 +471,173 @@ CON LO ANTERIOR, EL RESULTADO EXITOSO ES QUE YO EJECUTE:
 
 ***
 SI EL RESULTADO ES EXITOSO, DAME UN INFORME CONCISO DE EXITO, PARA COMUNICAR FLUJO DE TRABAJO.
+
+
+
+para ver el resultado de depdendenciaS
+
+poetry show --tree         # todo
+poetry show --tree --only main
+poetry show --tree --with dev
+
+
+# verifica versión
+poetry --version
+
+# (opcional pero recomendado) limpiar venvs creados por poetry para empezar fresco
+poetry env list
+poetry env remove --all
+
+# instalar deps (prod + dev)
+poetry install --with dev --no-interaction --no-ansi
+
+# correr tests vía poetry (si quieres correr fuera de docker)
+poetry run pytest -q tests/test_health.py -vv
+
+
+# Para exportar el requirements.txt desde poetry
+poetry self add "poetry-plugin-export"
+poetry export -f requirements.txt --output requirements.txt --without-hashes
+
+
+
+
+
+
+
+
+para correr los test limpios
+
+  # Re-construye la imagen del runner SIN caches
+  docker compose build --no-cache test-runner
+
+  # Corre otra vez los tests
+  docker compose run --rm test-runner pytest -q tests/test_health.py -vv
+
+
+
+
+
+
+
+
+# Order Processing Service (FastAPI + MongoDB)
+
+A minimal yet production-minded **Order Processing Service** built with **FastAPI**, **Motor (MongoDB async)**, and **Poetry**. It demonstrates patterns you’d expect in a real system: **idempotency**, **optimistic locking**, **clean layering**, **observability (logs/metrics)**, and **health checks**. Runs locally with Poetry or via Docker Compose.
+
+---
+
+## Features
+
+- **REST API**
+  - `POST /orders` — Idempotent creation (uses `Idempotency-Key` header).
+  - `GET /orders/{order_id}` — Retrieve by id.
+  - `PATCH /orders/{order_id}` — Update status with **optimistic locking** (header `If-Match` for version).
+  - `GET /health` — Liveness + dependency health (Mongo ping).
+  - `GET /metrics` — Prometheus metrics.
+
+- **Business rules**
+  - State machine: `CREATED → PAID → FULFILLED | CANCELLED`.
+  - Validations on transitions and payload (Pydantic v2).
+
+- **Observability**
+  - Structured logs (JSON) with `request_id`.
+  - Prometheus counters/histograms.
+
+- **Resilience**
+  - **Idempotency** cache for POST (collection with TTL).
+  - **Optimistic locking** in PATCH to avoid lost updates.
+  - Health returns **200** when Mongo OK, **503** on degraded dependency.
+
+---
+
+## Quickstart
+
+### A) Run with Docker Compose (recommended)
+
+```bash
+docker compose down -v
+docker compose up -d --build
+docker compose ps
+curl http://localhost:8000/health
+# -> {"status":"ok","mongo":"ok"}
+
+
+
+
+## 🧩 Bloque mínimo — Ejecución y decisiones
+
+Este bloque está listo para **copiar y pegar** en tu README. Incluye secciones breves con comandos listos y un resumen de decisiones arquitectónicas.
+
+---
+
+### ⚡ Run locally
+Ejecuta la API en modo desarrollo con recarga automática.
+```bash
+uvicorn app.main:app --reload
+```
+
+---
+
+### ✅ Run tests
+Pruebas unitarias y de integración rápidas.
+```bash
+pytest -q
+```
+
+---
+
+### 🐳 Docker
+Levanta los servicios con Docker Compose (detached) y build fresco.
+```bash
+docker compose up -d --build
+```
+
+---
+
+### 🧠 Decisiones (resumen)
+- **Idempotency-Key en POST**: evita duplicados ante reintentos.
+- **If-Match (optimistic lock) en PATCH**: control de concurrencia por versión.
+- **Logging estructurado**: eventos en JSON con `request_id`, `order_id`, nivel y timestamp.
+- **Métricas**: contadores y latencias listas para integración posterior.
+
+---
+
+### 🚀 Extensión a producción (siguiente paso)
+- **WAF, IAM, KMS** para seguridad y gestión de secretos.
+- **Step Functions, EventBridge** para orquestación y eventos.
+- **S3** para artefactos/evidencias.
+- **X-Ray** (o equivalente) para trazabilidad distribuida.
+
+> Nota: Sigue el **1-pager de producción** ya incluido en el repo para lineamientos detallados.
+
+
+
+
+
+AQUI COMO HACER UNA ISNTALACION LIMPIA DE DEPENDENCIAS CON POETRY
+    poetry env remove --all           # optional clean start
+    poetry install --with dev
+    poetry run uvicorn app.main:app --reload
+    # http://localhost:8000/docs
+
+
+
+
+
+AQUI COMO CORRER LOS TEST COMO POETRY
+
+    Tests
+
+    Run in container (clean, reproducible):
+
+    docker compose run --rm test-runner pytest -q -vv
+    # or only health tests
+    docker compose run --rm test-runner pytest -q tests/test_health.py -vv
+
+
+
+
+
+
 
