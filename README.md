@@ -47,6 +47,123 @@ Key reusable concepts: **idempotency, clear state transitions, async processing,
 
 ---
 
+# 🔎 Rapid & Comprehensive Project Review
+
+This section lets you verify the project’s **technical, functional, and quality** status quickly.  
+The idea is to work with **dedicated terminals**, separating responsibilities as in a professional environment.
+
+---
+
+## 🧭 Working Model with Dedicated Terminals
+
+- **Terminal 1 – Boot & Status**  
+- **Terminal 2 – Observability (logs & health)**  
+- **Terminal 3 – Tests (unit/integration)**  
+- **Terminal 4 – Code Quality (linters & typing)**  
+- **Terminal 5 – Database (MongoDB inspection)**  
+- **Terminal 6 – Dependencies (Poetry)**
+
+> Tip: keep each terminal open in its own tab/window.
+
+---
+
+## 🖥️ Terminal 1 – Boot & Status
+
+Start the services and check their state.
+
+~~~bash
+docker compose up --build
+docker compose ps
+~~~
+
+---
+
+## 📊 Terminal 2 – Observability
+
+Tail logs and validate the service health.
+
+~~~bash
+docker compose logs -f app
+docker compose logs -f mongo
+curl http://127.0.0.1:8000/health
+~~~
+
+---
+
+## ✅ Terminal 3 – Tests
+
+Run unit and integration tests.
+
+~~~bash
+pytest -v
+pytest tests/test_health.py
+~~~
+
+---
+
+## 🧹 Terminal 4 – Code Quality
+
+Check formatting, static errors, and typing.
+
+~~~bash
+black .
+ruff check .
+mypy .
+~~~
+
+---
+
+## 📂 Terminal 5 – Database
+
+Open MongoDB shell to inspect data and collections.
+
+~~~bash
+docker exec -it p1-mongo-1 mongosh   # replace with your actual container name if different
+show dbs
+use <your_db_name>
+db.orders.findOne()
+db.orders.getIndexes()
+~~~
+
+---
+
+## 📦 Terminal 6 – Dependencies (Poetry)
+
+Manage libraries and lockfiles.
+
+~~~bash
+poetry install
+poetry add <package>
+poetry update
+poetry export -f requirements.txt --output requirements.txt --without-hashes
+~~~
+
+---
+
+## ✅ Quick Review Checklist
+
+- [ ] Project starts cleanly with `docker compose up`.
+- [ ] Endpoints work in Swagger and `/health` returns healthy status.
+- [ ] Logs are visible and readable from the observability terminal.
+- [ ] Unit and integration tests pass.
+- [ ] Linters and typing checks report no critical issues.
+- [ ] MongoDB is accessible and collections are present.
+- [ ] Dependencies are in sync via Poetry.
+
+---
+
+## 🎯 Expected Outcome
+
+With these 6 terminals and the checklist you ensure:
+
+- 🚀 The project runs without errors.  
+- 📦 Dependencies remain consistent.  
+- 📊 Logs and health signals are under control.  
+- ✅ Tests and linters are executed.  
+- 🗄️ The database is reachable and validated.
+
+---
+
 
 
 
@@ -92,6 +209,98 @@ Probar logs por request
 
 Para correr los test
     poetry run pytest
+
+
+
+
+
+🖥️ Consola 1 – Ejecución del Proyecto (infraestructura viva)
+  # Levantar el proyecto con Docker Compose
+      docker compose up --build
+
+  # Levantar en background (modo demonio)
+      docker compose up -d
+
+  # Apagar servicios
+      docker compose down
+
+  # Ver estado de contenedores
+      docker compose ps
+
+  # Ver logs en tiempo real de la app
+      docker compose logs -f app
+
+
+🖥️ Consola 2 – Observabilidad y Monitoreo
+  # Logs en vivo de Mongo
+      docker compose logs -f mongo
+
+  # Logs en vivo de la app
+      docker compose logs -f app
+
+  # Healthcheck manual vía curl
+      curl http://127.0.0.1:8000/health
+
+  # Swagger UI (abrir en navegador)
+      http://127.0.0.1:8000/docs
+
+
+🖥️ Consola 3 – Tests y Validación Rápida
+  # Correr todos los tests
+    poetry run pytest
+
+  # Tests con cobertura
+    poetry run pytest --cov=app
+
+  # Test específico (ej: health)
+    poetry run pytest tests/test_health.py -v
+
+
+🖥️ Consola 4 – Estilo, Linter y Calidad de Código
+  # Linter ruff (rápido y estricto)
+    poetry run ruff check app
+
+  # Formateo automático con black
+    poetry run black app
+
+  # Revisión de typing
+    poetry run mypy app
+
+
+🖥️ Consola 5 – Base de Datos y Debug
+# Abrir shell de Mongo dentro del contenedor
+docker exec -it mongo mongosh
+
+# Ver bases de datos
+show dbs
+
+# Usar la DB específica
+use mydb
+
+# Ver colecciones
+show collections
+
+# Revisar índices
+db.orders.getIndexes()
+
+
+🖥️ Consola 6 – Gestión de dependencias y entorno
+  # Instalar dependencias del proyecto
+    poetry install
+
+  # Agregar una nueva dependencia
+    poetry add <paquete>
+
+  # Agregar solo para desarrollo (ej: pytest, black, mypy)
+    poetry add --group dev <paquete>
+
+  # Actualizar dependencias
+    poetry update
+
+
+
+
+
 
 
 

@@ -30,7 +30,7 @@ def _order_doc_from_in(payload: OrderIn) -> dict:
         "items": [it.model_dump() for it in payload.items],
         "status": "CREATED",
         "version": 1,
-        "total": total,  # Store as Decimal, motor handles conversion to Decimal128
+        "total": str(total),  # Store as string
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
     }
@@ -38,6 +38,12 @@ def _order_doc_from_in(payload: OrderIn) -> dict:
 def _order_out_from_doc(doc: dict) -> OrderOut:
     doc = dict(doc)
     doc["id"] = str(doc.pop("_id"))
+    # Convert total and item prices back to Decimal
+    if "total" in doc:
+        doc["total"] = Decimal(doc["total"])
+    for item in doc.get("items", []):
+        if "price" in item:
+            item["price"] = Decimal(item["price"])
     return OrderOut.model_validate(doc)
 
 async def create_order(payload: OrderIn, idempotency_key: Optional[str]) -> OrderOut:
