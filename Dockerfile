@@ -9,7 +9,7 @@ RUN pip install --no-cache-dir "poetry==${POETRY_VERSION}"
 
 WORKDIR /app
 
-# Instalar solo deps de producción
+# Instalar deps de producción
 COPY pyproject.toml poetry.lock* ./
 RUN poetry install --only main --no-interaction --no-ansi
 
