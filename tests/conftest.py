@@ -1,25 +1,17 @@
-# tests/conftest.py
-import pytest
+import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
-from unittest.mock import patch, AsyncMock
-
+from unittest.mock import patch
 from app.main import app, lifespan
 
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture
 async def test_client():
-    # Evita efectos reales de BD durante los tests
-    with patch("app.infra.mongo.connect_to_mongo", new=AsyncMock()), \
-         patch("app.infra.mongo.close_mongo_connection", new=AsyncMock()), \
-         patch("app.infra.mongo.ensure_indexes", new=AsyncMock()), \
-         patch("app.infra.mongo.db") as mock_db:
-
-        # Comportamiento saludable por defecto para /health
-        mock_db.return_value.command = AsyncMock(return_value={"ok": 1})
-
-        # Arranca y apaga la app correctamente durante el test
+    # Aislamos infra real durante los tests
+    with patch("app.main.connect_to_mongo"), \
+         patch("app.main.ensure_indexes"), \
+         patch("app.main.close_mongo_connection"):
         async with lifespan(app):
             async with AsyncClient(
-                transport=ASGITransport(app=app),
-                base_url="http://test"
+                transport=ASGITransport(app=app, lifespan="on"),
+                base_url="http://test",
             ) as client:
                 yield client
