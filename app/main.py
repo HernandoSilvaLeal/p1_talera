@@ -125,11 +125,18 @@ async def mongo_exception_handler(request: Request, exc: PyMongoError):
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     # Nota: mantenemos 400 para no romper contratos existentes
     log.warning("api.validation.error", errors=exc.errors())
+    serializable_errors = []
+    for error in exc.errors():
+        # Convertir 'input' de bytes a string si es necesario
+        if 'input' in error and isinstance(error['input'], bytes):
+            error['input'] = error['input'].decode('utf-8', errors='ignore')
+        serializable_errors.append(error)
+
     return problem(
         status_code=status.HTTP_400_BAD_REQUEST,
         message="Request validation failed",
         code="bad_request",
-        details=exc.errors(),
+        details=serializable_errors,
     )
 
 @app.exception_handler(HTTPException)
