@@ -3,6 +3,7 @@ import logging
 import time
 import uuid
 from contextlib import asynccontextmanager
+import json
 
 import structlog
 from fastapi import FastAPI, Request, status, HTTPException
@@ -20,7 +21,6 @@ from app.routes import health as health_router
 from app.utils import request_context
 from app.utils.errors import problem
 
-# 1. Configurar el logging ESTRUCTURADO lo antes posible
 configure_logging(level=settings.log_level)
 log = structlog.get_logger("bootstrap")
 log.info("app_booting", service_name=settings.service_name)
@@ -125,20 +125,42 @@ async def mongo_exception_handler(request: Request, exc: PyMongoError):
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     # Nota: mantenemos 400 para no romper contratos existentes
     log.warning("api.validation.error", errors=exc.errors())
-    serializable_errors = []
-    for error in exc.errors():
-        # Convertir 'input' de bytes a string si es necesario
-        if 'input' in error and isinstance(error['input'], bytes):
-            error['input'] = error['input'].decode('utf-8', errors='ignore')
-        serializable_errors.append(error)
+    # Convertir exc.errors() a un string JSON para asegurar serialización
+    serializable_details = json.dumps(exc.errors())
 
     return problem(
         status_code=status.HTTP_400_BAD_REQUEST,
         message="Request validation failed",
         code="bad_request",
-        details=serializable_errors,
+        details=serializable_details,
     )
 
+
+@app.exception_handler(domain_errors.NotFound)
+async def not_found_exception_handler(request: Request, exc: domain_errors.NotFound):
+    return problem(
+        status_code=status.HTTP_404_NOT_FOUND,
+        message=str(exc),
+        code="not_found",
+    )
+
+@app.exception_handler(domain_errors.Conflict)
+async def conflict_exception_handler(request: Request, exc: domain_errors.Conflict):
+    return problem(
+        status_code=status.HTTP_409_CONFLICT,
+        message=str(exc),
+        code="conflict",
+    )
+
+@app.exception_handler(domain_errors.InvalidTransition)
+async def invalid_transition_exception_handler(request: Request, exc: domain_errors.InvalidTransition):
+    return problem(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        message=str(exc),
+        code="invalid_transition",
+    )
+
+# Mover este handler DESPUÉS de app.include_router para que capture 404/405
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     """
@@ -165,28 +187,4 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         message=str(exc.detail) if isinstance(exc.detail, str) else "HTTP error",
         code=code_map.get(exc.status_code, "http_error"),
         details=details,
-    )
-
-@app.exception_handler(domain_errors.NotFound)
-async def not_found_exception_handler(request: Request, exc: domain_errors.NotFound):
-    return problem(
-        status_code=status.HTTP_404_NOT_FOUND,
-        message=str(exc),
-        code="not_found",
-    )
-
-@app.exception_handler(domain_errors.Conflict)
-async def conflict_exception_handler(request: Request, exc: domain_errors.Conflict):
-    return problem(
-        status_code=status.HTTP_409_CONFLICT,
-        message=str(exc),
-        code="conflict",
-    )
-
-@app.exception_handler(domain_errors.InvalidTransition)
-async def invalid_transition_exception_handler(request: Request, exc: domain_errors.InvalidTransition):
-    return problem(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        message=str(exc),
-        code="invalid_transition",
     )
