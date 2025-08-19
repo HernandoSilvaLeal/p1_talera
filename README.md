@@ -131,6 +131,123 @@ docker compose down -v
 
 
 
+## 🧭 Architecture Diagrams
+
+> High-level view first, then focused views per concern. Each diagram includes a short legend (1–2 lines) to anchor the reader.
+
+![Architecture — Global Overview with 12 subdiagrams](https://res.cloudinary.com/dqvny6ewr/image/upload/v1755578080/DiagramTotalResume_12Subs_oo9s3x.png)
+
+### Index
+- [1) Containers & Context](#1-containers--context)  
+- [2) Components — Clean Architecture](#2-components--clean-architecture)  
+- [3) Request E2E — POST /orders (Idempotency)](#3-request-e2e--post-orders-idempotency)  
+- [4) State Machine & Versions](#4-state-machine--versions)  
+- [5) Idempotency Flow](#5-idempotency-flow)  
+- [6) Health & Observability](#6-health--observability)  
+- [7) Database & Indexes](#7-database--indexes)  
+- [8) Concurrency — Optimistic Locking](#8-concurrency--optimistic-locking)  
+- [9) Error Matrix — HTTP](#9-error-matrix--http)  
+- [10) API Surface & Contracts](#10-api-surface--contracts)  
+- [11) Testing Pyramid](#11-testing-pyramid)  
+- [12) Local Deployment (dev/prod)](#12-local-deployment-devprod)
+
+---
+
+### 1 Containers & Context
+
+![Diagram 1 — Containers and Context](https://res.cloudinary.com/dqvny6ewr/image/upload/v1755578091/DiagramArchitecture1_Containers_and_Context_v5j7d3.png)
+
+**Legend (EN):** Context boundaries across client/API/infra. Requests traverse HTTP → FastAPI → Mongo, with structured logging and correlation IDs.
+
+---
+
+### 2 Components — Clean Architecture
+
+![Diagram 2 — Clean Architecture Components](https://res.cloudinary.com/dqvny6ewr/image/upload/v1755578092/DiagramArch2_Components_Clean_Ar___Mermaid_Chart-2025-08-18-202419_vesond.png)
+
+**Legend (EN):** Layered separation (routes/services/domain/infra). DTOs validated at the edge; domain rules enforced centrally; infra is swappable.
+
+---
+
+### 3 Request E2E — POST /orders (Idempotency)
+
+![Diagram 3 — E2E POST orders with Idempotency](https://res.cloudinary.com/dqvny6ewr/image/upload/v1755578089/DiagramArch3_Request_E2E_POST_orders_Ide___Mermaid_Chart-2025-08-18-212312_lpk1nj.png)
+
+**Legend (EN):** End-to-end flow for order creation using `Idempotency-Key`. Guarantees exactly-once effect under retries and network glitches.
+
+---
+
+### 4 State Machine & Versions
+
+![Diagram 4 — State Machine (small)](https://res.cloudinary.com/dqvny6ewr/image/upload/v1755578088/DiagramArch4_Small_StateMachine_Flow_yi2gf7.png)
+
+![Diagram 4 — State Machine (big)](https://res.cloudinary.com/dqvny6ewr/image/upload/v1755578089/DiagramArch4_Big_StateMachine_i5ueev.png)
+
+**Legend (EN):** Explicit state transitions with optimistic versioning. PATCH enforces legal transitions and rejects invalid paths with domain errors.
+
+---
+
+### 5 Idempotency Flow
+
+![Diagram 5 — Idempotency Flow](https://res.cloudinary.com/dqvny6ewr/image/upload/v1755578084/DiagramArch5_Idempotency_Flow_xplv7x.png)
+
+**Legend (EN):** Storage-backed key registry (TTL + unique index). Replays return the original response; diverging payloads yield conflict.
+
+---
+
+### 6 Health & Observability
+
+![Diagram 6 — Health and Observability](https://res.cloudinary.com/dqvny6ewr/image/upload/v1755578087/DiagramArch6_Health_and_Observability_hoopxn.png)
+
+**Legend (EN):** Probes for liveness/deps (Mongo ping). Structured JSON logs, request IDs, and metrics surfaces for SRE dashboards.
+
+---
+
+### 7 Database & Indexes
+
+![Diagram 7 — Database and Indexes](https://res.cloudinary.com/dqvny6ewr/image/upload/v1755578085/DiagramArch7_Database_and_Indexes_jjdyde.png)
+
+**Legend (EN):** Collections: `orders`, `idempotency_keys`. Critical indexes: unique business keys and TTL to cap storage for replay windows.
+
+---
+
+### 8 Concurrency — Optimistic Locking
+
+![Diagram 8 — Optimistic Locking](https://res.cloudinary.com/dqvny6ewr/image/upload/v1755578088/DiagramArch8_Concurrency_Optimistic_Lock_fqdobc.png)
+
+**Legend (EN):** Version field + `If-Match/ETag` contract prevent lost updates. Conflicting writers receive `409 Conflict`.
+
+---
+
+### 9 Error Matrix — HTTP
+
+![Diagram 9 — HTTP Error Matrix](https://res.cloudinary.com/dqvny6ewr/image/upload/v1755578080/DiagramArch9_Error_Matrix_HTTP_nhdopt.png)
+
+**Legend (EN):** Canonical error shapes mapped to HTTP: 400 validation, 404 not found, 409 conflict, 422 domain violations, 5xx infra failures.
+
+---
+
+### 10 API Surface & Contracts
+
+![Diagram 10 — API Surface and Contracts](https://res.cloudinary.com/dqvny6ewr/image/upload/v1755578081/DiagramArch10_API_Surface_Contracts_t3swwx.png)
+
+**Legend (EN):** Public endpoints and headers of interest. Emphasizes idempotent POST and PATCH preconditions using ETag semantics.
+
+---
+
+### 11 Testing Pyramid
+
+![Diagram 11 — Testing Pyramid](https://res.cloudinary.com/dqvny6ewr/image/upload/v1755578080/DiagramArch11_Testing_Pyramid_sfpj8s.png)
+
+**Legend (EN):** Heavier focus on unit/domain tests; selective integration/e2e coverage for critical flows (idempotency, state transitions).
+
+---
+
+### 12 Local Deployment (dev/prod)
+
+![Diagram 12 — Local Deployment dev/prod](https://res.cloudinary.com/dqvny6ewr/image/upload/v1755578076/DiagramArch12_Local_Deployment_dev_prod_jni95h.png)
+
+**Legend (EN):** Docker Compose for local dev parity; environment contracts mirror production (Mongo, app, test runner).
 
 
 
