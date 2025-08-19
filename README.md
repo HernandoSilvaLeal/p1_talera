@@ -75,9 +75,9 @@ It demonstrates **real-world backend patterns**: idempotent `POST` requests, opt
 
 
 
-# ⚡ TL;DR (arranque rápido)
+# ⚡ TL;DR (fast start)
 
-Comandos **mínimos** para ejecutar, testear y chequear salud. Copia/pega según tu entorno.
+**Minimum** commands to run, test, and check health. Copy/paste according to your environment.
 
 **Local (hot-reload)**
 ```bash
@@ -100,7 +100,7 @@ docker compose ps
 docker compose logs -f app
 ```
 
-**Healthcheck (espera 200 OK)**
+**Healthcheck (expects 200 OK)**
 ```bash
 curl -s http://127.0.0.1:8000/health
 # -> {"status":"ok","mongo":"ok"}
@@ -111,7 +111,7 @@ curl -s http://127.0.0.1:8000/health
 http://127.0.0.1:8000/docs
 ```
 
-**Apagar y limpiar**
+**Shutdown and clean up**
 ```bash
 docker compose down -v
 ```
