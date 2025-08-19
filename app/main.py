@@ -155,7 +155,7 @@ async def conflict_exception_handler(request: Request, exc: domain_errors.Confli
     return problem(
         status_code=status.HTTP_409_CONFLICT,
         message=str(exc),
-        code="conflict",
+                code="conflict",
     )
 
 @app.exception_handler(domain_errors.InvalidTransition)
