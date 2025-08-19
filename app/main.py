@@ -128,11 +128,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     # Convertir exc.errors() a un formato JSON serializable
     serializable_errors = []
     for error in exc.errors():
-        # Convertir ErrorWrapper a dict y manejar 'input' si es bytes
-        error_dict = error # Pydantic v2 errors are already dicts
-        if 'input' in error_dict and isinstance(error_dict['input'], bytes):
-            error_dict['input'] = error_dict['input'].decode('utf-8', errors='ignore')
-        serializable_errors.append(error_dict)
+        # error is already a dict, check and decode 'input' if it is bytes
+        if 'input' in error and isinstance(error['input'], bytes):
+            error['input'] = error['input'].decode('utf-8', errors='ignore')
+        serializable_errors.append(error)
 
     return problem(
         status_code=status.HTTP_400_BAD_REQUEST,

@@ -125,6 +125,41 @@ docker compose down -v
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # 🚀 Local Execution (Development)
 
 Run the application locally in development mode with hot-reload and Poetry-managed virtual environment.
