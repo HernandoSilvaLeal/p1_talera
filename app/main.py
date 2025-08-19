@@ -125,14 +125,21 @@ async def mongo_exception_handler(request: Request, exc: PyMongoError):
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     # Nota: mantenemos 400 para no romper contratos existentes
     log.warning("api.validation.error", errors=exc.errors())
-    # Convertir exc.errors() a un string JSON para asegurar serialización
-    serializable_details = json.dumps(exc.errors())
+    
+    # Convertir exc.errors() a un formato JSON serializable
+    serializable_errors = []
+    for error in exc.errors():
+        # Convertir ErrorWrapper a dict y manejar 'input' si es bytes
+        error_dict = error.model_dump() # Use model_dump() for Pydantic v2 errors
+        if 'input' in error_dict and isinstance(error_dict['input'], bytes):
+            error_dict['input'] = error_dict['input'].decode('utf-8', errors='ignore')
+        serializable_errors.append(error_dict)
 
     return problem(
         status_code=status.HTTP_400_BAD_REQUEST,
         message="Request validation failed",
         code="bad_request",
-        details=serializable_details,
+        details=serializable_errors,
     )
 
 
