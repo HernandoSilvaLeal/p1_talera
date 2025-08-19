@@ -80,6 +80,34 @@ app = FastAPI(
     default_response_class=ORJSONResponse,
 )
 
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """
+    Unifica shape para errores Starlette/FastAPI típicos:
+    - 404 Not Found (ruta inexistente)
+    - 405 Method Not Allowed
+    - 415 Unsupported Media Type
+    y cualquier otro HTTPException lanzado explícitamente.
+    """
+    level = "warning" if exc.status_code < 500 else "error"
+    getattr(log, level)("http.exception", status_code=exc.status_code, detail=str(exc.detail))
+    # Si detail es dict/list ya compatible, lo enviamos como details
+    details = exc.detail if isinstance(exc.detail, (dict, list)) else {"detail": str(exc.detail)}
+    code_map = {
+        404: "not_found",
+        405: "method_not_allowed",
+        415: "unsupported_media_type",
+        400: "bad_request",
+        409: "conflict",
+        422: "unprocessable_entity",
+    }
+    return problem(
+        status_code=exc.status_code,
+        message=str(exc.detail) if isinstance(exc.detail, str) else "HTTP error",
+        code=code_map.get(exc.status_code, "http_error"),
+        details=details,
+    )
+
 # Middleware & Routers
 app.middleware("http")(logging_middleware)
 app.include_router(orders_router)

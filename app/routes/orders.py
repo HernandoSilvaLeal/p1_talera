@@ -23,12 +23,18 @@ async def get_order_endpoint(order_id: str):
     return await get_order(order_id)
 
 @router.patch("/{order_id}", response_model=OrderOut, name="update_status_endpoint")
-async def update_status_endpoint(order_id: str, payload: StatusUpdate, if_match: Optional[str] = Header(default=None, alias="If-Match")):
-    if not if_match:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="If-Match header (version) is required")
+async def update_status_endpoint(
+    order_id: str, payload: StatusUpdate, if_match: str = Header(None, alias="If-Match")
+):
+    # Guard mínimamente invasivo: If-Match requerido y entero positivo
+    if if_match is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="If-Match header is required")
     try:
         expected_version = int(if_match)
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="If-Match must be an integer version") from e
+        if expected_version < 0:
+            raise ValueError()
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="If-Match must be a non-negative integer")
 
-    return await update_status(order_id, payload, expected_version)
+    order = await update_status(order_id, payload, expected_version)
+    return order
