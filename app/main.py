@@ -75,7 +75,7 @@ async def logging_middleware(request: Request, call_next):
 
 
 app = FastAPI(
-    title="Order Processing Service",
+    title="Backend Microservice - Ecommerce Order Processing Service ",
     version="1.0.0",
     lifespan=lifespan,
     default_response_class=ORJSONResponse,
@@ -93,7 +93,6 @@ app.include_router(metrics_router)
 async def health():
     """Health check: confirma que la app puede conectar con sus dependencias (Mongo)."""
     try:
-        # Usar un timeout bajo para no bloquear el event loop por mucho tiempo
         await asyncio.wait_for(
             db().command("ping"),
             timeout=2.0
