@@ -5,7 +5,7 @@ import uuid
 from contextlib import asynccontextmanager
 
 import structlog
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse
 from pymongo.errors import PyMongoError
@@ -18,6 +18,7 @@ from app.routes.metrics import router as metrics_router
 from app.routes.orders import router as orders_router
 from app.routes import health as health_router
 from app.utils import request_context
+from app.utils.errors import problem
 
 # 1. Configurar el logging ESTRUCTURADO lo antes posible
 configure_logging(level=settings.log_level)
@@ -80,6 +81,57 @@ app = FastAPI(
     default_response_class=ORJSONResponse,
 )
 
+# Middleware & Routers
+app.middleware("http")(logging_middleware)
+app.include_router(orders_router)
+app.include_router(metrics_router)
+
+
+# --- Health Endpoints ---
+
+@app.get("/health", tags=["Health"], status_code=status.HTTP_200_OK)
+async def health():
+    """Health check: confirma que la app puede conectar con sus dependencias (Mongo)."""
+    try:
+        # Usar un timeout bajo para no bloquear el event loop por mucho tiempo
+        await asyncio.wait_for(
+            db().command("ping"),
+            timeout=2.0
+        )
+        return {"status": "ok", "mongo": "ok"}
+    except Exception:
+        log.warning("health.check.failed", dependency="mongo")
+        return problem(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            message="Service degraded",
+            code="service_degraded",
+            details={"mongo": "error"},
+        )
+
+
+# --- Exception Handlers ---
+
+@app.exception_handler(PyMongoError)
+async def mongo_exception_handler(request: Request, exc: PyMongoError):
+    log.error("mongo.error", error=str(exc), exc_info=True)
+    return problem(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        message="Unexpected database error",
+        code="db_error",
+        details=str(exc),
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    # Nota: mantenemos 400 para no romper contratos existentes
+    log.warning("api.validation.error", errors=exc.errors())
+    return problem(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        message="Request validation failed",
+        code="bad_request",
+        details=exc.errors(),
+    )
+
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     """
@@ -108,59 +160,26 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         details=details,
     )
 
-# Middleware & Routers
-app.middleware("http")(logging_middleware)
-app.include_router(orders_router)
-app.include_router(metrics_router)
-
-
-# --- Health Endpoints ---
-
-@app.get("/health", tags=["Health"], status_code=status.HTTP_200_OK)
-async def health():
-    """Health check: confirma que la app puede conectar con sus dependencias (Mongo)."""
-    try:
-        # Usar un timeout bajo para no bloquear el event loop por mucho tiempo
-        await asyncio.wait_for(
-            db().command("ping"),
-            timeout=2.0
-        )
-        return {"status": "ok", "mongo": "ok"}
-    except Exception:
-        log.warning("health.check.failed", dependency="mongo")
-        return ORJSONResponse(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content={"status": "degraded", "mongo": "error"}
-        )
-
-
-# --- Exception Handlers ---
-
-@app.exception_handler(PyMongoError)
-async def mongo_exception_handler(request: Request, exc: PyMongoError):
-    log.error("mongo.error", error=str(exc), exc_info=True)
-    return ORJSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "An unexpected database error occurred"}
-    )
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    # Log detallado de errores de validación
-    log.warning("api.validation.error", errors=exc.errors())
-    return ORJSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        content={"detail": exc.errors()}
-    )
-
 @app.exception_handler(domain_errors.NotFound)
 async def not_found_exception_handler(request: Request, exc: domain_errors.NotFound):
-    return ORJSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": str(exc)})
+    return problem(
+        status_code=status.HTTP_404_NOT_FOUND,
+        message=str(exc),
+        code="not_found",
+    )
 
 @app.exception_handler(domain_errors.Conflict)
 async def conflict_exception_handler(request: Request, exc: domain_errors.Conflict):
-    return ORJSONResponse(status_code=status.HTTP_409_CONFLICT, content={"detail": str(exc)})
+    return problem(
+        status_code=status.HTTP_409_CONFLICT,
+        message=str(exc),
+        code="conflict",
+    )
 
 @app.exception_handler(domain_errors.InvalidTransition)
 async def invalid_transition_exception_handler(request: Request, exc: domain_errors.InvalidTransition):
-    return ORJSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content={"detail": str(exc)})
+    return problem(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        message=str(exc),
+        code="invalid_transition",
+    )
