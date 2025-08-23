@@ -153,6 +153,18 @@ docker compose down -v
 
 ---
 
+
+## 📖 Documentación y Código Fuente
+
+* **Documentación Técnica Completa:** Para un análisis detallado de la arquitectura, decisiones de diseño y guías, consulte la documentación en Deepwiki.
+    * **[Ver Documentación en Deepwiki](https://deepwiki.com/HernandoSilvaLeal/p1_talera)**
+
+* **Repositorio de Código:** Todo el código fuente del proyecto está disponible en el siguiente repositorio de GitHub.
+    * **[Explorar el Código en GitHub](https://github.com/HernandoSilvaLeal/p1_talera)**
+
+
+---
+
 ## 📂 Repositorio de Diagramas de Arquitectura
 
 Este apartado contiene el enlace al repositorio central en Google Drive donde se encuentran todos los diagramas de arquitectura, recursos y documentación visual relacionados con la prueba técnica.
