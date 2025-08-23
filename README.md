@@ -153,6 +153,49 @@ docker compose down -v
 
 ---
 
+## 📂 Repositorio de Diagramas de Arquitectura
+
+Este apartado contiene el enlace al repositorio central en Google Drive donde se encuentran todos los diagramas de arquitectura, recursos y documentación visual relacionados con la prueba técnica.
+
+### Enlace de Acceso
+
+> **[Acceder a la carpeta de Google Drive con todos los diagramas](https://drive.google.com/drive/folders/1YrU69ewttq6xY9WrZ94qkP-xwTQ_UWGO?usp=sharing)**
+
+### Estructura del Contenido
+
+La carpeta principal está organizada en tres subdirectorios clave para facilitar la consulta:
+
+* **`1. AWS Architecture aws_talera`**
+    * En esta carpeta se encuentran las distintas versiones y la versión final del diagrama de arquitectura diseñado para ser desplegado en AWS.
+    * Incluye carpetas como:
+        * `AWS_Diagram_version1`
+        * `AWS_Diagram_version2`
+        * `AWS_Diagram_version3`
+        * `AWS_Diagram_version4_Final`
+        * `AWS_CloudFormation_Code_Deploy_Cloud`
+
+* **`2. Diagrams Architecture (12)`**
+    * Contiene una colección curada de los 12 diagramas más relevantes que explican a fondo componentes y flujos específicos de la solución.
+    * Aborda temas como:
+        * Máquinas de estado (Generales y específicas).
+        * Flujo de Idempotencia.
+        * Salud y Observabilidad del sistema.
+        * Estrategias de Base de Datos e Índices.
+        * Manejo de Concurrencia y Bloqueo Optimista.
+        * Pirámide de Testing.
+
+* **`3. FILES Diagrams Full`**
+    * Este directorio alberga la colección completa y más detallada de todos los diagramas generados.
+    * Es el lugar ideal para buscar un diagrama específico o ver la visión de conjunto.
+    * Incluye diagramas de resumen general (`DiagramTotalResume_C1Dev.png`, `DiagramTotalResume_C4Devs.png`) y otros sobre:
+        * Contenedores y Contexto (C1).
+        * Componentes y Arquitectura Limpia (C2).
+        * Flujos E2E para peticiones POST.
+        * Despliegue local.
+
+
+---
+
 ### 1 Containers & Context
 
 ![Diagram 1 — Containers and Context](https://res.cloudinary.com/dqvny6ewr/image/upload/v1755578091/DiagramArchitecture1_Containers_and_Context_v5j7d3.png)
